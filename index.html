@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오늘의 푸드트럭 · 샘마을대우한양아파트</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; background: #f5f6f8; margin: 0; padding: 20px; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 420px; background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    h1 { font-size: 22px; margin: 0 0 8px 0; color: #111; }
+    p.sub { font-size: 14px; color: #666; margin: 0 0 24px 0; }
+    .date-nav { display: flex; justify-content: space-between; align-items: center; background: #f0f2f5; padding: 10px 16px; border-radius: 12px; margin-bottom: 20px; font-weight: bold; }
+    .date-nav button { background: none; border: none; font-size: 20px; cursor: pointer; padding: 4px 10px; }
+    .card { border: 1px solid #eee; border-radius: 12px; padding: 16px; margin-bottom: 12px; background: #fafafa; }
+    .card h3 { margin: 0 0 6px 0; font-size: 17px; color: #222; }
+    .card p { margin: 4px 0; font-size: 14px; color: #555; }
+    .empty { text-align: center; color: #999; padding: 40px 0; font-size: 14px; }
+    .btn-add { display: block; width: 100%; text-align: center; background: #ff6b00; color: white; text-decoration: none; padding: 14px 0; border-radius: 12px; font-weight: bold; font-size: 16px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>오늘의 푸드트럭</h1>
+  <p class="sub">샘마을대우한양아파트 주민들이 함께 채워가는 푸드트럭 소식이에요.</p>
+  
+  <div class="date-nav">
+    <button onclick="changeDate(-1)">‹</button>
+    <span id="current-date">오늘</span>
+    <button onclick="changeDate(1)">›</button>
+  </div>
+
+  <div id="truck-list">불러오는 중...</div>
+
+  <a href="https://forms.gle/Qyk4Cv5MzTWH73id7" target="_blank" class="btn-add">🚚 트럭 소식 알리기</a>
+</div>
+
+<script>
+  const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRKNt-Nacw9SwbqurM7ktSvNIXinJxvpZGYKef73KTRc8N4vRDcFYFzqOSJscOtmmCTL64wuOlNHoyz/pub?output=csv";
+  let selectedDate = new Date();
+  let allData = [];
+
+  function formatDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  function updateDateDisplay() {
+    const todayStr = formatDate(new Date());
+    const selStr = formatDate(selectedDate);
+    document.getElementById('current-date').innerText = (todayStr === selStr) ? `오늘 (${selStr})` : selStr;
+    renderList();
+  }
+
+  function changeDate(days) {
+    selectedDate.setDate(selectedDate.getDate() + days);
+    updateDateDisplay();
+  }
+
+  function renderList() {
+    const listEl = document.getElementById('truck-list');
+    const targetDate = formatDate(selectedDate);
+    const filtered = allData.filter(row => row[1] && row[1].trim() === targetDate);
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = '<div class="empty">등록된 푸드트럭 소식이 없어요.<br>첫 소식을 알려주세요!</div>';
+      return;
+    }
+
+    listEl.innerHTML = filtered.map(row => `
+      <div class="card">
+        <h3>🚚 ${row[2] || '메뉴 정보 없음'}</h3>
+        <p>📍 위치: ${row[3] || '-'}</p>
+        <p>⏰ 메모: ${row[4] || '-'}</p>
+      </div>
+    `).join('');
+  }
+
+  fetch(CSV_URL)
+    .then(res => res.text())
+    .then(text => {
+      const rows = text.split('\n').slice(1);
+      allData = rows.map(r => r.split(','));
+      updateDateDisplay();
+    })
+    .catch(() => {
+      document.getElementById('truck-list').innerHTML = '<div class="empty">데이터를 불러오지 못했습니다.</div>';
+    });
+</script>
+</body>
+</html>
